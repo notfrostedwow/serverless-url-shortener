@@ -1,9 +1,16 @@
 # Serverless URL shortener
 
+[![Offline checks](https://github.com/notfrostedwow/serverless-url-shortener/actions/workflows/checks.yml/badge.svg?branch=main)](https://github.com/notfrostedwow/serverless-url-shortener/actions/workflows/checks.yml)
+
+Python 3.11+ · CI on Python 3.11 and 3.12 · [MIT license](LICENSE)
+
 A working Python HTTP service that creates random short links and redirects them
 until expiry. It runs without AWS and includes a real DynamoDB adapter and an
 **undeployed** SAM template for API Gateway, Lambda, DynamoDB and CloudWatch Logs.
-An original portfolio project for **notfrostedwow**, using synthetic examples.
+Local requests exercise the same application rules used by the Lambda adapter.
+The examples are synthetic. No hosted endpoint or live AWS integration is claimed.
+
+[Run it](#run-locally) · [HTTP contract](#contract) · [Architecture](#architecture) · [Security](SECURITY.md)
 
 ## Run locally
 
@@ -43,10 +50,9 @@ checks 201/302/404/405/400 and stops its child server:
 .venv/Scripts/python tools/demo.py
 ```
 
-Read the [actual session](docs/validation/local-demo.txt). Windows console capture
-produced blank pixels; no screenshot or illustrated substitute is claimed. The
-[attempt record](docs/validation/screenshot-attempt.txt) is retained. On Linux/macOS
-use `.venv/bin/` instead of `.venv/Scripts/`, and `curl` instead of `curl.exe`.
+Read the [actual HTTP session](docs/validation/local-demo.txt) for request and
+response headers. On Linux/macOS use `.venv/bin/` instead of `.venv/Scripts/`,
+and `curl` instead of `curl.exe`.
 
 ## Contract
 
@@ -117,10 +123,32 @@ networking. Temp parents are created explicitly in fresh checkouts.
 
 [docs/verification.md](docs/verification.md) records actual results and limitations.
 Python 3.11/3.12 CI has only `contents: read`, pinned actions and no deployment or
-credential steps. No remote run, badge or AWS integration success is claimed.
+credential steps. The badge links to live CI results. These checks do not prove
+AWS integration or production readiness.
+
+## Find your way around
+
+```text
+src/shortener/
+  domain.py           URL validation, random codes, expiry and storage interface
+  http.py             Shared request/response contract
+  local.py            Loopback-only HTTP server with bounded memory storage
+  dynamodb.py         Conditional writes and consistent reads
+  aws.py              Lazy-initialized Lambda REST proxy v1 adapter
+tests/                Domain, HTTP, SDK Stubber and infrastructure tests
+infra/template.yaml   Undeployed API Gateway, Lambda and DynamoDB design
+tools/demo.py         Real local HTTP demonstration and cleanup
+docs/                 API policy, cloud design and validation records
+```
+
+## Possible next steps
+
+An expiry cleanup policy for the local store and idempotent creation requests
+would address two current limits. Neither is implemented. Any public deployment
+would need abuse handling and real AWS integration tests before use. There is
+no administration UI, custom alias feature or analytics dashboard.
 
 [ZAHEER-GUIDE.md](ZAHEER-GUIDE.md) explains the code and interview tradeoffs;
 [CONTRIBUTING.md](CONTRIBUTING.md) covers local checks. Original code is
-[MIT licensed](LICENSE), Copyright (c) 2026 Zaheer Miah, with explicit approval.
-Dependencies retain [their own licenses/notices](docs/dependencies.md). Parent
-review controls all future publication and deployment.
+[MIT licensed](LICENSE), Copyright (c) 2026 Zaheer Miah.
+Dependencies retain [their own licenses/notices](docs/dependencies.md).
