@@ -66,7 +66,14 @@ def target_url(value: object) -> str:
         if port is not None and not 1 <= port <= 65535:
             raise InvalidTarget
         if ":" in host:
-            normalized_host = f"[{ipaddress.IPv6Address(host).compressed}]"
+            address = ipaddress.IPv6Address(host)
+            if address.ipv4_mapped is not None:
+                # Keep mapped addresses in hex even when Python renders a dotted tail.
+                # Their five leading zero hextets always form the longest zero run.
+                mapped = int(address) & 0xFFFFFFFF
+                normalized_host = f"[::ffff:{mapped >> 16:x}:{mapped & 0xFFFF:x}]"
+            else:
+                normalized_host = f"[{address.compressed}]"
             # urlsplit otherwise tolerates junk following a closing IPv6 bracket.
             if not re.fullmatch(r"\[[0-9a-fA-F:.]+\](?::[0-9]+)?", parsed.netloc):
                 raise InvalidTarget

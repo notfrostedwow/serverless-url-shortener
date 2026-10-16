@@ -79,7 +79,12 @@ percent escapes by decoding exactly once to UTF-8; decoded controls/backslashes
 and invalid UTF-8 fail. Never double-decode.
 
 Hosts are canonical dotted IPv4, bracketed IPv6 without zone IDs, or ASCII DNS
-names with at least two labels. DNS labels are 1–63 letters/digits/interior
+names with at least two labels. IPv6 uses lowercase hexadecimal with leading
+zeros removed and the longest zero run compressed (first run on ties).
+IPv4-mapped IPv6 always uses hexadecimal too: both `[::ffff:192.0.2.1]` and
+`[::FFFF:C000:0201]` become `[::ffff:c000:201]`, regardless of Python's mapped
+address string representation. Explicit ports are retained and normalized.
+DNS labels are 1–63 letters/digits/interior
 hyphens, total length at most 253, final label starting with a letter. No trailing
 dot, underscores or numeric browser shorthand. `xn--` labels must round-trip via
 Python's IDNA codec (IDNA 2003, not a complete IDNA 2008/UTS 46 implementation).

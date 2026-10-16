@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ipaddress
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
@@ -46,6 +47,62 @@ CODE_B = "BcDe1234_-yz"
 def test_url_policy_preserves_legitimate_query_and_encoding(value, expected):
     assert target_url(value) == expected
     assert target_url(expected) == expected
+
+
+@pytest.mark.parametrize(
+    ("host", "expected"),
+    [
+        ("[::ffff:192.0.2.1]", "[::ffff:c000:201]"),
+        ("[::ffff:c000:0201]", "[::ffff:c000:201]"),
+        ("[0000:0000:0000:0000:0000:FFFF:C000:0201]", "[::ffff:c000:201]"),
+        ("[::FFFF:192.0.2.1]:08443", "[::ffff:c000:201]:8443"),
+        ("[::ffff:C000:0201]:65535", "[::ffff:c000:201]:65535"),
+        ("[::ffff:0.0.0.0]", "[::ffff:0:0]"),
+        ("[::ffff:0.0.0.1]", "[::ffff:0:1]"),
+        ("[::ffff:192.0.0.0]", "[::ffff:c000:0]"),
+        ("[::ffff:255.255.255.255]", "[::ffff:ffff:ffff]"),
+        ("[2001:0DB8:0000:0000:0001:0000:0000:0001]:00443", "[2001:db8::1:0:0:1]:443"),
+        ("[0:0:0:0:0:0:0:0]", "[::]"),
+        ("[::192.0.2.1]", "[::c000:201]"),
+    ],
+)
+def test_ipv6_hex_canonicalization(host, expected):
+    tail = "/docs?next=a%2Fb&ref=demo#part"
+    canonical = f"https://{expected}{tail}"
+    assert target_url(f"https://{host}{tail}") == canonical
+    assert target_url(canonical) == canonical
+
+
+@pytest.mark.parametrize("host", ["::ffff:192.0.2.1", "::ffff:c000:201", "::FFFF:C000:0201"])
+def test_mapped_ipv6_canonicalization_with_dotted_runtime_string(monkeypatch, host):
+    original_str = ipaddress.IPv6Address.__str__
+
+    def dotted_mapped_str(address):
+        mapped = address.ipv4_mapped
+        return f"::ffff:{mapped}" if mapped is not None else original_str(address)
+
+    # Reproduce the newer Python mapped-address representation on older interpreters.
+    monkeypatch.setattr(ipaddress.IPv6Address, "__str__", dotted_mapped_str)
+    assert ipaddress.IPv6Address(host).compressed == "::ffff:192.0.2.1"
+    assert target_url(f"https://[{host}]:8443/") == "https://[::ffff:c000:201]:8443/"
+
+
+@pytest.mark.parametrize(
+    "authority",
+    [
+        "[::ffff:192.0.2.1",
+        "::ffff:192.0.2.1]",
+        "[[::ffff:192.0.2.1]]",
+        "[::ffff:192.0.2.1]junk",
+        "[::ffff:192.0.2.256]",
+        "[::ffff:192.0.2.1]:",
+        "[::ffff:c000:201]:65536",
+        "[::ffff:c000:201]:443:80",
+    ],
+)
+def test_invalid_ipv6_authority(authority):
+    with pytest.raises(InvalidTarget):
+        target_url(f"https://{authority}/")
 
 
 @pytest.mark.parametrize(
