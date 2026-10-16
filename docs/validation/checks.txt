@@ -1,0 +1,32 @@
+Actual local checks; no remote workflow or AWS integration implied.
+
+$ python -m pytest -q --basetemp=.tmp/pytest
+........................................................................ [ 31%]
+........................................................................ [ 62%]
+........................................................................ [ 93%]
+................                                                         [100%]
+232 passed in 7.29s
+exit_code=0
+
+$ python -m ruff check .
+All checks passed!
+exit_code=0
+
+$ python -m ruff format --check .
+26 files already formatted
+exit_code=0
+
+$ python -m mypy src --cache-dir=.cache/mypy
+Success: no issues found in 6 source files
+exit_code=0
+
+$ python -m pip check
+No broken requirements found.
+exit_code=0
+
+$ python tools/validate_iac.py
+cfn-lint --config-file infra/cfnlintrc.json --template infra/template.yaml --regions us-east-1 (sockets/DNS disabled; workspace dummy AWS config)
+Offline SAM translation: 9 resources; IAM create/public redirect verified; no managed policy lookup, packaging or AWS calls.
+cfn-lint --config-file infra/cfnlintrc.json --template .tmp/transformed-template.json --regions us-east-1 (sockets/DNS disabled; workspace dummy AWS config)
+Feature 'normalized_open_api_version' not available in Feature Toggle Config.
+exit_code=0

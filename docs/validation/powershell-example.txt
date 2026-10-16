@@ -1,0 +1,31 @@
+$ powershell.exe -NoProfile -NonInteractive -File .tmp/readme-example.ps1
+$ErrorActionPreference = 'Stop'
+$payload = '{"url":"https://example.com/docs?ref=demo","ttl_seconds":60}'
+$created = $payload | curl.exe --noproxy "*" --max-time 3 -sS http://127.0.0.1:8000/links -H "Content-Type: application/json" --data-binary "@-" | ConvertFrom-Json
+$created | ConvertTo-Json
+curl.exe --noproxy "*" --max-time 3 -i "http://127.0.0.1:8000$($created.short_path)"
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+Actual output:
+{
+    "code":  "k4Bk763tAOVy",
+    "expires_at":  1792097632,
+    "short_path":  "/r/k4Bk763tAOVy"
+}
+HTTP/1.0 302 Found
+Server: LocalShortener 
+Date: Thu, 15 Oct 2026 20:52:52 GMT
+Cache-Control: no-store
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+Location: https://example.com/docs?ref=demo
+Content-Length: 0
+Connection: close
+
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+
+exit_code=0

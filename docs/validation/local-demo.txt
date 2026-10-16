@@ -1,0 +1,79 @@
+Actual synthetic local HTTP session; curl never uses --location.
+
+$ url-shortener --port 58161
+
+$ curl --noproxy '*' --max-time 3 --silent --show-error -X POST http://127.0.0.1:58161/links -H Content-Type:application/json --data-binary @.tmp/demo-request.json -o .tmp/demo-created.json -w \n%{http_code}
+
+201
+exit_code=0
+Actual response body:
+{"code": "EjwE9HoSzwFR", "expires_at": 1792097075, "short_path": "/r/EjwE9HoSzwFR"}
+
+$ curl --noproxy '*' --max-time 3 --silent --show-error -i http://127.0.0.1:58161/r/EjwE9HoSzwFR -w \n%{http_code}
+HTTP/1.0 302 Found
+Server: LocalShortener 
+Date: Thu, 15 Oct 2026 20:43:35 GMT
+Cache-Control: no-store
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+Location: https://example.com/docs?ref=demo
+Content-Length: 0
+Connection: close
+
+
+302
+exit_code=0
+
+$ curl --noproxy '*' --max-time 3 --silent --show-error -i http://127.0.0.1:58161/r/AAAAAAAAAAAA -w \n%{http_code}
+HTTP/1.0 404 Not Found
+Server: LocalShortener 
+Date: Thu, 15 Oct 2026 20:43:35 GMT
+Cache-Control: no-store
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+Content-Type: application/json; charset=utf-8
+Content-Length: 69
+Connection: close
+
+{"error":{"code":"not_found","message":"Link not found or expired."}}
+404
+exit_code=0
+
+$ curl --noproxy '*' --max-time 3 --silent --show-error -i http://127.0.0.1:58161/links -w \n%{http_code}
+HTTP/1.0 405 Method Not Allowed
+Server: LocalShortener 
+Date: Thu, 15 Oct 2026 20:43:35 GMT
+Cache-Control: no-store
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+Content-Type: application/json; charset=utf-8
+Allow: POST
+Content-Length: 91
+Connection: close
+
+{"error":{"code":"method_not_allowed","message":"Method is not supported for this route."}}
+405
+exit_code=0
+
+$ curl --noproxy '*' --max-time 3 --silent --show-error -i -X POST http://127.0.0.1:58161/links -H Content-Type:application/json --data-binary {"url":"javascript:synthetic"} -w \n%{http_code}
+HTTP/1.0 400 Bad Request
+Server: LocalShortener 
+Date: Thu, 15 Oct 2026 20:43:35 GMT
+Cache-Control: no-store
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+Content-Type: application/json; charset=utf-8
+Content-Length: 101
+Connection: close
+
+{"error":{"code":"invalid_url","message":"URL does not match the documented HTTP(S) target policy."}}
+400
+exit_code=0
+
+Actual server stdout/stderr:
+{"event": "local_server_started", "address": "http://127.0.0.1:58161", "storage": "memory_only", "authentication": "none_local_demo", "capacity": 1000}
+{"event": "http_result", "route": "create", "status": 201}
+{"event": "http_result", "route": "redirect", "status": 302}
+{"event": "http_result", "route": "redirect", "status": 404}
+{"event": "http_result", "route": "create", "status": 405}
+{"event": "http_result", "route": "create", "status": 400}

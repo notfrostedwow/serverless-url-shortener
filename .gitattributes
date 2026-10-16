@@ -1,0 +1,4 @@
+* text=auto eol=lf
+*.png binary
+# Captured HTTP headers can legitimately end in spaces; preserve actual output.
+docs/validation/*.txt whitespace=-blank-at-eol

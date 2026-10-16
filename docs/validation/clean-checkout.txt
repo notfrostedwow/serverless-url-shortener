@@ -1,0 +1,50 @@
+Privacy note: local absolute workspace paths are replaced with [workspace]; commands, output and exit codes are otherwise preserved.
+
+
+CWD: [workspace]
+$ git -c core.hooksPath=NUL worktree add --detach [workspace]\.cache\clean-review-1877f13 1877f13779f6839aa0377d7e3d6679199f9fa31e
+HEAD is now at 1877f13 Implement bounded HTTP shortener with DynamoDB and offline SAM checks
+Preparing worktree (detached HEAD 1877f13)
+exit_code=0
+Before checks: .tmp, .cache, .venv and build are absent.
+
+CWD: [workspace]\.cache\clean-review-1877f13
+$ [workspace]\.venv\Scripts\python.exe -c from pathlib import Path; import shortener; print(shortener.__file__); assert Path(shortener.__file__).is_relative_to(Path.cwd()/"src")
+[workspace]\.cache\clean-review-1877f13\src\shortener\__init__.py
+exit_code=0
+
+CWD: [workspace]\.cache\clean-review-1877f13
+$ [workspace]\.venv\Scripts\python.exe tools/verify.py
+
+$ python -m pytest -q --basetemp=.tmp/pytest
+........................................................................ [ 31%]
+........................................................................ [ 62%]
+........................................................................ [ 93%]
+................                                                         [100%]
+232 passed in 7.29s
+exit_code=0
+
+$ python -m ruff check .
+All checks passed!
+exit_code=0
+
+$ python -m ruff format --check .
+26 files already formatted
+exit_code=0
+
+$ python -m mypy src --cache-dir=.cache/mypy
+Success: no issues found in 6 source files
+exit_code=0
+
+$ python -m pip check
+No broken requirements found.
+exit_code=0
+
+$ python tools/validate_iac.py
+cfn-lint --config-file infra/cfnlintrc.json --template infra/template.yaml --regions us-east-1 (sockets/DNS disabled; workspace dummy AWS config)
+Offline SAM translation: 9 resources; IAM create/public redirect verified; no managed policy lookup, packaging or AWS calls.
+cfn-lint --config-file infra/cfnlintrc.json --template .tmp/transformed-template.json --regions us-east-1 (sockets/DNS disabled; workspace dummy AWS config)
+Feature 'normalized_open_api_version' not available in Feature Toggle Config.
+exit_code=0
+exit_code=0
+Fresh checkout checks passed using existing same-workspace dependencies; no source or ignored directories were copied.

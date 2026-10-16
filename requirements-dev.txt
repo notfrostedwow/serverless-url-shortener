@@ -1,0 +1,7 @@
+-r requirements-aws.txt
+pytest==9.1.1
+ruff==0.17.1
+mypy==2.4.0
+cfn-lint==1.57.2
+aws-sam-translator==1.115.0
+setuptools==82.0.1

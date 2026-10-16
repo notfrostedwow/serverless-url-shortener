@@ -1,0 +1,47 @@
+Privacy note: local absolute workspace paths are replaced with [workspace]; commands, output and exit codes are otherwise preserved.
+
+Actual offline packaging checks; fresh directories per invocation.
+
+$ [workspace]\.venv\Scripts\python.exe -m pip wheel --no-index --no-deps --no-build-isolation -w [workspace]\.tmp\package-7ov794mr\wheels .
+Processing [workspace]
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: serverless-url-shortener
+  Building wheel for serverless-url-shortener (pyproject.toml): started
+  Building wheel for serverless-url-shortener (pyproject.toml): finished with status 'done'
+  Created wheel for serverless-url-shortener: filename=serverless_url_shortener-0.1.0-py3-none-any.whl size=15788 sha256=fc71c3d03dc0f1f707534d7c721ec3c7abc52a17269ce8ec7064bbaa5d34ddac
+  Stored in directory: [workspace]\.cache\pip\wheels\b9\bd\13\c154a74a3608c7b9bec825225734ed6bc1fb61c67ce6aa96a1
+Successfully built serverless-url-shortener
+exit_code=0
+
+$ [workspace]\.tmp\package-7ov794mr\clean-venv\Scripts\python.exe -m pip install --no-index --no-deps [workspace]\.tmp\package-7ov794mr\wheels\serverless_url_shortener-0.1.0-py3-none-any.whl
+Processing [workspace]\.tmp\package-7ov794mr\wheels\serverless_url_shortener-0.1.0-py3-none-any.whl
+Installing collected packages: serverless-url-shortener
+Successfully installed serverless-url-shortener-0.1.0
+exit_code=0
+
+$ [workspace]\.tmp\package-7ov794mr\clean-venv\Scripts\url-shortener.exe --version
+0.1.0
+exit_code=0
+
+$ [workspace]\.tmp\package-7ov794mr\clean-venv\Scripts\python.exe -I -c from shortener.domain import MemoryStore, Shortener; s=Shortener(MemoryStore()); link=s.create('https://example.com/docs?ref=demo'); assert s.resolve(link.code)==link; print('wheel-only stdlib create/resolve passed')
+wheel-only stdlib create/resolve passed
+exit_code=0
+
+$ [workspace]\.venv\Scripts\python.exe -m pip install --no-index --no-deps --find-links [workspace]\.cache\wheels --target [workspace]\.tmp\package-7ov794mr\lambda-artifact -r src/requirements.txt
+Looking in links: [workspace]\.cache\wheels
+Processing [workspace]\.cache\wheels\boto3-1.43.114-py3-none-any.whl (from -r src/requirements.txt (line 1))
+Processing [workspace]\.cache\wheels\botocore-1.43.114-py3-none-any.whl (from -r src/requirements.txt (line 2))
+Processing [workspace]\.cache\wheels\jmespath-1.1.0-py3-none-any.whl (from -r src/requirements.txt (line 3))
+Processing [workspace]\.cache\wheels\s3transfer-0.19.2-py3-none-any.whl (from -r src/requirements.txt (line 4))
+Processing [workspace]\.cache\wheels\python_dateutil-2.9.0.post0-py2.py3-none-any.whl (from -r src/requirements.txt (line 5))
+Processing [workspace]\.cache\wheels\six-1.17.0-py2.py3-none-any.whl (from -r src/requirements.txt (line 6))
+Processing [workspace]\.cache\wheels\urllib3-2.8.0-py3-none-any.whl (from -r src/requirements.txt (line 7))
+Installing collected packages: urllib3, six, s3transfer, python-dateutil, jmespath, botocore, boto3
+Successfully installed boto3-1.43.114 botocore-1.43.114 jmespath-1.1.0 python-dateutil-2.9.0.post0 s3transfer-0.19.2 six-1.17.0 urllib3-2.8.0
+exit_code=0
+
+$ [workspace]\.tmp\package-7ov794mr\clean-venv\Scripts\python.exe -I [workspace]\.tmp\package-7ov794mr\artifact_smoke.py
+Lambda artifact imports its packaged SDK and handler with sockets blocked
+exit_code=0
+Approved MIT wheel license/metadata and both artifact checks passed.

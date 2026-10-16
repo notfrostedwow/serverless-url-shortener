@@ -1,0 +1,122 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Undeployed portfolio URL shortener. IAM protects writes; redirects are public.
+
+Parameters:
+  FunctionName:
+    Type: String
+    Default: portfolio-url-shortener
+    AllowedPattern: '[a-z][a-z0-9-]{2,47}'
+
+Resources:
+  Links:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: code
+          AttributeType: S
+      KeySchema:
+        - AttributeName: code
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: false
+
+  FunctionLogs:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${FunctionName}'
+      RetentionInDays: 14
+
+  FunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ExactTableAndLogGroup
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ReadAndInsertLinks
+                Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                Resource: !GetAtt Links.Arn
+              - Sid: FunctionLogStreams
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${FunctionName}:log-stream:*'
+
+  RestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub '${AWS::StackName}-api'
+      StageName: demo
+      OpenApiVersion: 3.0.1
+      EndpointConfiguration:
+        Type: REGIONAL
+      MethodSettings:
+        - ResourcePath: '/*'
+          HttpMethod: '*'
+          ThrottlingRateLimit: 5
+          ThrottlingBurstLimit: 10
+          CachingEnabled: false
+          DataTraceEnabled: false
+          LoggingLevel: 'OFF'
+          MetricsEnabled: false
+
+  Shortener:
+    Type: AWS::Serverless::Function
+    DependsOn: FunctionLogs
+    Properties:
+      FunctionName: !Ref FunctionName
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      CodeUri: ../src/
+      Handler: shortener.aws.lambda_handler
+      MemorySize: 256
+      Timeout: 10
+      ReservedConcurrentExecutions: 2
+      Role: !GetAtt FunctionRole.Arn
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref Links
+      Events:
+        Create:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /links
+            Method: ANY
+            Auth:
+              Authorizer: AWS_IAM
+        Redirect:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RestApi
+            Path: /r/{code}
+            Method: ANY
+
+Outputs:
+  ApiBase:
+    Description: Intended API stage base; no live endpoint exists from local work.
+    Value: !Sub 'https://${RestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/demo'

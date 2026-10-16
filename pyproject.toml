@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools==82.0.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "serverless-url-shortener"
+version = "0.1.0"
+description = "A bounded URL shortener with offline HTTP and isolated AWS adapters"
+requires-python = ">=3.11"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "notfrostedwow"}]
+dependencies = []
+
+[project.optional-dependencies]
+aws = ["boto3==1.43.114"]
+
+[project.scripts]
+url-shortener = "shortener.local:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+"src/shortener/local.py" = ["S104"]
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+files = ["src"]
+
+[[tool.mypy.overrides]]
+module = ["boto3", "botocore.*"]
+ignore_missing_imports = true
